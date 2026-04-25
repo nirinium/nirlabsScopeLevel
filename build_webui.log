@@ -1,0 +1,166 @@
+InvalidProjectConfError: Invalid 'C:\Users\nirinium\Documents\GitHub\nirlabsScopeLevel\nirlabsScopeLevel\platformio.ini' (project configuration file): 'Source contains parsing errors: 'C:\\Users\\nirinium\\Documents\\GitHub\\nirlabsScopeLevel\\nirlabsScopeLevel\\platformio.ini'
+	[line 20]: '+<main_xiao.cpp>\n'
+	[line 21]: '-<blink_test.cpp>\n'
+	[line 22]: '-<main.cpp>\n'
+	[line 23]: '-<main_xiao_webui.cpp>\n'
+	[line 25]: 'adafruit/Adafruit Unified Sensor@^1.1.15\n'
+	[line 26]: 'adafruit/Adafruit ADXL345@^1.3.4\n'
+	[line 34]: '+<blink_test.cpp>\n'
+	[line 35]: '-<main_xiao.cpp>\n'
+	[line 36]: '-<main.cpp>\n'
+	[line 37]: '-<main_xiao_webui.cpp>\n'
+	[line 45]: '+<main_xiao_webui.cpp>\n'
+	[line 46]: '-<blink_test.cpp>\n'
+	[line 47]: '-<main_xiao.cpp>\n'
+	[line 48]: '-<main.cpp>\n'
+	[line 50]: 'adafruit/Adafruit Unified Sensor@^1.1.15\n'
+	[line 51]: 'adafruit/Adafruit ADXL345@^1.3.4\n'
+	[line 52]: 'me-no-dev/ESPAsyncWebServer@^1.2.3\n'
+	[line 53]: 'me-no-dev/AsyncTCP@^1.1.1\n'
+	[line 54]: 'bblanchon/ArduinoJson@^7.0\n'
+	[line 56]: '-DBOARD_HAS_PSRAM\n''
+Traceback (most recent call last):
+  File "C:\Users\nirinium\.platformio\penv\Lib\site-packages\platformio\project\config.py", line 111, in read
+    self._parser.read(path, "utf-8")
+  File "C:\Users\nirinium\.platformio\python3\Lib\configparser.py", line 713, in read
+    self._read(fp, filename)
+  File "C:\Users\nirinium\.platformio\python3\Lib\configparser.py", line 1132, in _read
+    raise e
+configparser.ParsingError: Source contains parsing errors: 'C:\\Users\\nirinium\\Documents\\GitHub\\nirlabsScopeLevel\\nirlabsScopeLevel\\platformio.ini'
+	[line 20]: '+<main_xiao.cpp>\n'
+	[line 21]: '-<blink_test.cpp>\n'
+	[line 22]: '-<main.cpp>\n'
+	[line 23]: '-<main_xiao_webui.cpp>\n'
+	[line 25]: 'adafruit/Adafruit Unified Sensor@^1.1.15\n'
+	[line 26]: 'adafruit/Adafruit ADXL345@^1.3.4\n'
+	[line 34]: '+<blink_test.cpp>\n'
+	[line 35]: '-<main_xiao.cpp>\n'
+	[line 36]: '-<main.cpp>\n'
+	[line 37]: '-<main_xiao_webui.cpp>\n'
+	[line 45]: '+<main_xiao_webui.cpp>\n'
+	[line 46]: '-<blink_test.cpp>\n'
+	[line 47]: '-<main_xiao.cpp>\n'
+	[line 48]: '-<main.cpp>\n'
+	[line 50]: 'adafruit/Adafruit Unified Sensor@^1.1.15\n'
+	[line 51]: 'adafruit/Adafruit ADXL345@^1.3.4\n'
+	[line 52]: 'me-no-dev/ESPAsyncWebServer@^1.2.3\n'
+	[line 53]: 'me-no-dev/AsyncTCP@^1.1.1\n'
+	[line 54]: 'bblanchon/ArduinoJson@^7.0\n'
+	[line 56]: '-DBOARD_HAS_PSRAM\n'
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "C:\Users\nirinium\.platformio\penv\Scripts\platformio.exe\__main__.py", line 5, in <module>
+  File "C:\Users\nirinium\.platformio\penv\Lib\site-packages\platformio\__main__.py", line 134, in main
+    maintenance.on_platformio_exit()
+  File "C:\Users\nirinium\.platformio\penv\Lib\site-packages\platformio\maintenance.py", line 65, in on_platformio_exit
+    telemetry.on_exit()
+  File "C:\Users\nirinium\.platformio\penv\Lib\site-packages\platformio\telemetry.py", line 177, in on_exit
+    TelemetryLogger().send()
+    ^^^^^^^^^^^^^^^^^
+  File "C:\Users\nirinium\.platformio\penv\Lib\site-packages\platformio\util.py", line 133, in get_instance
+    _instances[cls] = cls(*args, **kwargs)
+                      ^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\nirinium\.platformio\penv\Lib\site-packages\platformio\telemetry.py", line 78, in __init__
+    self._http_session = HTTPSession()
+                         ^^^^^^^^^^^^^
+  File "C:\Users\nirinium\.platformio\penv\Lib\site-packages\platformio\http.py", line 52, in __init__
+    self.headers.update({"User-Agent": app.get_user_agent()})
+                                       ^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\nirinium\.platformio\penv\Lib\site-packages\platformio\app.py", line 277, in get_user_agent
+    if not get_setting("enable_telemetry"):
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\nirinium\.platformio\penv\Lib\site-packages\platformio\app.py", line 208, in get_setting
+    with State() as state:
+         ^^^^^^^
+  File "C:\Users\nirinium\.platformio\penv\Lib\site-packages\platformio\app.py", line 88, in __init__
+    self.path = resolve_state_path("core_dir", "appstate.json")
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\nirinium\.platformio\penv\Lib\site-packages\platformio\app.py", line 77, in resolve_state_path
+    state_dir = ProjectConfig.get_instance().get("platformio", conf_option_dir)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\nirinium\.platformio\penv\Lib\site-packages\platformio\project\config.py", line 524, in get_instance
+    instance = {"mtime": mtime, "config": ProjectConfig(path)}
+                                          ^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\nirinium\.platformio\penv\Lib\site-packages\platformio\project\config.py", line 99, in __init__
+    self.read(path, parse_extra)
+  File "C:\Users\nirinium\.platformio\penv\Lib\site-packages\platformio\project\config.py", line 113, in read
+    raise exception.InvalidProjectConfError(path, str(exc)) from exc
+platformio.project.exception.InvalidProjectConfError: Invalid 'C:\Users\nirinium\Documents\GitHub\nirlabsScopeLevel\nirlabsScopeLevel\platformio.ini' (project configuration file): 'Source contains parsing errors: 'C:\\Users\\nirinium\\Documents\\GitHub\\nirlabsScopeLevel\\nirlabsScopeLevel\\platformio.ini'
+	[line 20]: '+<main_xiao.cpp>\n'
+	[line 21]: '-<blink_test.cpp>\n'
+	[line 22]: '-<main.cpp>\n'
+	[line 23]: '-<main_xiao_webui.cpp>\n'
+	[line 25]: 'adafruit/Adafruit Unified Sensor@^1.1.15\n'
+	[line 26]: 'adafruit/Adafruit ADXL345@^1.3.4\n'
+	[line 34]: '+<blink_test.cpp>\n'
+	[line 35]: '-<main_xiao.cpp>\n'
+	[line 36]: '-<main.cpp>\n'
+	[line 37]: '-<main_xiao_webui.cpp>\n'
+	[line 45]: '+<main_xiao_webui.cpp>\n'
+	[line 46]: '-<blink_test.cpp>\n'
+	[line 47]: '-<main_xiao.cpp>\n'
+	[line 48]: '-<main.cpp>\n'
+	[line 50]: 'adafruit/Adafruit Unified Sensor@^1.1.15\n'
+	[line 51]: 'adafruit/Adafruit ADXL345@^1.3.4\n'
+	[line 52]: 'me-no-dev/ESPAsyncWebServer@^1.2.3\n'
+	[line 53]: 'me-no-dev/AsyncTCP@^1.1.1\n'
+	[line 54]: 'bblanchon/ArduinoJson@^7.0\n'
+	[line 56]: '-DBOARD_HAS_PSRAM\n''
+Exception ignored in atexit callback: <function _finalize at 0x00000266B7E9AAC0>
+Traceback (most recent call last):
+  File "C:\Users\nirinium\.platformio\penv\Lib\site-packages\platformio\telemetry.py", line 313, in _finalize
+    telemetry = TelemetryLogger()
+                ^^^^^^^^^^^^^^^^^
+  File "C:\Users\nirinium\.platformio\penv\Lib\site-packages\platformio\util.py", line 133, in get_instance
+    _instances[cls] = cls(*args, **kwargs)
+                      ^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\nirinium\.platformio\penv\Lib\site-packages\platformio\telemetry.py", line 78, in __init__
+    self._http_session = HTTPSession()
+                         ^^^^^^^^^^^^^
+  File "C:\Users\nirinium\.platformio\penv\Lib\site-packages\platformio\http.py", line 52, in __init__
+    self.headers.update({"User-Agent": app.get_user_agent()})
+                                       ^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\nirinium\.platformio\penv\Lib\site-packages\platformio\app.py", line 277, in get_user_agent
+    if not get_setting("enable_telemetry"):
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\nirinium\.platformio\penv\Lib\site-packages\platformio\app.py", line 208, in get_setting
+    with State() as state:
+         ^^^^^^^
+  File "C:\Users\nirinium\.platformio\penv\Lib\site-packages\platformio\app.py", line 88, in __init__
+    self.path = resolve_state_path("core_dir", "appstate.json")
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\nirinium\.platformio\penv\Lib\site-packages\platformio\app.py", line 77, in resolve_state_path
+    state_dir = ProjectConfig.get_instance().get("platformio", conf_option_dir)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\nirinium\.platformio\penv\Lib\site-packages\platformio\project\config.py", line 524, in get_instance
+    instance = {"mtime": mtime, "config": ProjectConfig(path)}
+                                          ^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\nirinium\.platformio\penv\Lib\site-packages\platformio\project\config.py", line 99, in __init__
+    self.read(path, parse_extra)
+  File "C:\Users\nirinium\.platformio\penv\Lib\site-packages\platformio\project\config.py", line 113, in read
+    raise exception.InvalidProjectConfError(path, str(exc)) from exc
+platformio.project.exception.InvalidProjectConfError: Invalid 'C:\Users\nirinium\Documents\GitHub\nirlabsScopeLevel\nirlabsScopeLevel\platformio.ini' (project configuration file): 'Source contains parsing errors: 'C:\\Users\\nirinium\\Documents\\GitHub\\nirlabsScopeLevel\\nirlabsScopeLevel\\platformio.ini'
+	[line 20]: '+<main_xiao.cpp>\n'
+	[line 21]: '-<blink_test.cpp>\n'
+	[line 22]: '-<main.cpp>\n'
+	[line 23]: '-<main_xiao_webui.cpp>\n'
+	[line 25]: 'adafruit/Adafruit Unified Sensor@^1.1.15\n'
+	[line 26]: 'adafruit/Adafruit ADXL345@^1.3.4\n'
+	[line 34]: '+<blink_test.cpp>\n'
+	[line 35]: '-<main_xiao.cpp>\n'
+	[line 36]: '-<main.cpp>\n'
+	[line 37]: '-<main_xiao_webui.cpp>\n'
+	[line 45]: '+<main_xiao_webui.cpp>\n'
+	[line 46]: '-<blink_test.cpp>\n'
+	[line 47]: '-<main_xiao.cpp>\n'
+	[line 48]: '-<main.cpp>\n'
+	[line 50]: 'adafruit/Adafruit Unified Sensor@^1.1.15\n'
+	[line 51]: 'adafruit/Adafruit ADXL345@^1.3.4\n'
+	[line 52]: 'me-no-dev/ESPAsyncWebServer@^1.2.3\n'
+	[line 53]: 'me-no-dev/AsyncTCP@^1.1.1\n'
+	[line 54]: 'bblanchon/ArduinoJson@^7.0\n'
+	[line 56]: '-DBOARD_HAS_PSRAM\n''

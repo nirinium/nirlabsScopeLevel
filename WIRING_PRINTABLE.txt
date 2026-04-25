@@ -1,0 +1,188 @@
+NIRLABS SCOPE LEVEL - EASY WIRING SHEET (BREADBOARD)
+Target: Seeed Studio XIAO ESP32C3 + ADXL345 + 5 LEDs
+Features: deep sleep, shake-awake via ADXL INT1, battery monitor
+
+If you are new to wiring, follow this in order and do NOT skip steps.
+
+============================================================
+0) WHAT THE WORDS MEAN (QUICK)
+============================================================
+- 3V3 = 3.3V power pin
+- GND = ground
+- GPIO = a controllable signal pin
+- LED anode = long leg (+)
+- LED cathode = short leg (-, usually flat side on LED body)
+
+Rule to remember:
+GPIO pin -> resistor -> LED long leg
+LED short leg -> GND
+
+============================================================
+1) PARTS CHECKLIST
+============================================================
+[ ] 1x XIAO ESP32C3
+[ ] 1x ADXL345 module (must have INT1 pin broken out)
+[ ] 5x LEDs (2 red, 2 yellow, 1 green)
+[ ] 5x resistors (220 ohm to 330 ohm)
+[ ] Breadboard + jumper wires
+[ ] 1x SPST on/off switch (for hard power cut)
+[ ] Optional 1x SPST switch (for soft standby on D10)
+[ ] Optional battery divider: 2x 100k resistors
+
+============================================================
+2) PIN MAP (COPY EXACTLY)
+============================================================
+ADXL345 connections:
+- XIAO 3V3        -> ADXL345 VCC  (TB2 RED)
+- XIAO GND        -> ADXL345 GND (TB1 GREEN)
+- XIAO D4 (GPIO6) -> ADXL345 SDA  (TB5 BLACK)
+- XIAO D5 (GPIO7) -> ADXL345 SCL (TB6 RED)
+- XIAO 3V3        -> ADXL345 CS  (TB3 WHITE)
+- XIAO GND        -> ADXL345 SDO (TB4 BLUE)
+- XIAO D9 (GPIO?) -> ADXL345 INT1        *** SHAKE-AWAKE WIRE ***
+  (INT2 can be left unconnected)
+
+LED connections (each through its own resistor):
+- XIAO D1 (GPIO3)  -> resistor -> RED LEFT long leg
+- XIAO D7 (GPIO20) -> resistor -> YELLOW LEFT long leg
+- XIAO D6 (GPIO21) -> resistor -> GREEN CENTER long leg
+- XIAO D2 (GPIO4)  -> resistor -> YELLOW RIGHT long leg
+- XIAO D3 (GPIO5)  -> resistor -> RED RIGHT long leg
+- All LED short legs -> GND rail
+
+Optional battery sense (only if you are using battery monitoring):
+- Battery + -> 100k -> ADC NODE -> 100k -> GND
+- ADC NODE -> XIAO A0/D0 (GPIO2)
+- Battery - -> GND
+
+Optional soft standby switch (firmware controlled):
+- XIAO D10 (GPIO10) -> one switch leg
+- Other switch leg -> GND
+- Switch OPEN = RUN, switch CLOSED = standby sleep
+
+Recommended hard power switch (real OFF):
+- Battery + -> hard switch -> system VIN/5V input
+- Battery - -> system GND
+- This fully disconnects power and gives best battery life
+
+============================================================
+3) BREADBOARD LAYOUT (LEFT TO RIGHT)
+============================================================
+LED order must be:
+RED-L   YEL-L   GREEN   YEL-R   RED-R
+
+Put all 5 LED short legs toward the same side so grounding is easy.
+
+============================================================
+4) STEP-BY-STEP BUILD
+============================================================
+Step 1:
+Put the XIAO on the breadboard so pins are easy to reach.
+
+Step 2:
+Pick one rail as GND and one rail as 3V3.
+Wire XIAO GND to GND rail.
+Wire XIAO 3V3 to 3V3 rail.
+-
+Step 3:
+Place ADXL345 on the board.
+Wire VCC and GND first.
+
+Step 4:
+Wire ADXL345 mode pins:
+CS to 3V3, SDO to GND.
+
+Step 5:
+Wire I2C:
+D4 -> SDA, D5 -> SCL.
+
+Step 5b (SHAKE-AWAKE - required for deep sleep wake-up):
+Wire ADXL345 INT1 -> XIAO D8 (GPIO8).
+Do NOT use INT2 for this. Only INT1 is connected to firmware.
+No resistor needed on this line.
+
+Step 6:
+Place 5 LEDs in this order:
+RED-L, YEL-L, GREEN, YEL-R, RED-R.
+
+Step 7:
+For each LED:
+Connect one resistor from its GPIO pin to the LED long leg.
+Connect LED short leg to GND rail.
+
+Step 8 (optional battery input):
+Build the 100k/100k divider and connect midpoint to GPIO2.
+
+Step 9 (recommended hard OFF switch):
+Put the switch in series with battery positive.
+Example: Battery + -> switch -> board power input.
+
+Step 10 (optional soft standby switch):
+Wire D10 to switch, and switch to GND.
+OPEN = run, CLOSED = standby sleep.
+
+============================================================
+5) STOP-AND-CHECK BEFORE POWER
+============================================================
+[ ] Every LED has a resistor in series
+[ ] Every LED short leg goes to GND
+[ ] ADXL345 VCC is 3.3V (NOT 5V)
+[ ] ADXL345 CS is tied to 3V3
+[ ] ADXL345 SDO is tied to GND
+[ ] SDA is on D4 and SCL is on D5
+[ ] ADXL345 INT1 is wired to D8 (GPIO8) - shake-awake
+[ ] All grounds are common
+[ ] Hard power switch is in series with battery + (if used)
+[ ] Soft switch on D10 goes only to GND (if used)
+
+If any box is unchecked, do not power yet.
+
+============================================================
+6) FIRST POWER TEST
+============================================================
+1. Power the board.
+2. Open serial monitor at 115200.
+3. You should see I2C scan find device at 0x53.
+
+If you do not see 0x53:
+- Recheck SDA/SCL are not swapped.
+- Recheck CS and SDO straps.
+- Recheck ADXL345 power and ground.
+
+============================================================
+7) DEEP SLEEP BEHAVIOR
+============================================================
+After 60 seconds of the scope sitting perfectly level, the XIAO
+enters deep sleep. The USB port disappears - this is normal.
+
+To wake:
+- Pick up or move the scope - the ADXL345 detects the motion
+  and pulses INT1 HIGH, which wakes the XIAO via D8 (GPIO8).
+
+Calibration is preserved in RTC memory across sleep cycles.
+The device will NOT re-run the calibration routine on wake,
+only on a true cold boot (first power-on after full power loss).
+
+If the device is not waking on movement:
+- Confirm INT1 (not INT2) is wired to D8.
+- Try moving the scope more firmly - threshold is ~250 mg (1/4g).
+- Threshold is tunable: see ACCEL_ACTIVITY_THRESHOLD in firmware.
+
+============================================================
+8) COMMON FIXES
+============================================================
+Problem: Left/right is backwards
+Fix: Swap only left and right LED signal wires.
+
+Problem: LED too bright
+Fix: Use bigger resistor (330 to 470 ohm).
+
+Problem: LED too dim
+Fix: Use 220 ohm and verify correct LED leg orientation.
+
+Problem: Board never fully turns off
+Fix: Use the hard power switch in battery + line. Soft switch is standby, not true off.
+
+============================================================
+END OF EASY SHEET
+============================================================
