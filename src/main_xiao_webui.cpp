@@ -163,409 +163,421 @@ const char INDEX_HTML[] PROGMEM = R"HTML(
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Scope Level Controller</title>
+  <title>NIRLABS // TACTICAL LEVEL SYS</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --green: #00ff41;
+      --amber: #ffb000;
+      --red:   #ff2828;
+      --bg:    #050a05;
+      --dim:   #003b00;
+      --border:#1a4a1a;
+    }
     body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
-      color: #fff;
-      padding: 20px;
+      font-family: 'Courier New', Courier, monospace;
+      background: var(--bg);
+      color: var(--green);
+      padding: 14px;
       min-height: 100vh;
-    }
-    .container {
-      max-width: 900px;
-      margin: 0 auto;
-      background: rgba(0, 0, 0, 0.3);
-      border-radius: 15px;
-      padding: 30px;
-      backdrop-filter: blur(10px);
-      box-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
-    }
-    h1 {
-      text-align: center;
-      margin-bottom: 30px;
-      font-size: 2.5em;
-      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
-    }
-    .dashboard {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 20px;
-      margin-bottom: 30px;
-    }
-    .card {
-      background: rgba(255, 255, 255, 0.1);
-      border-radius: 10px;
-      padding: 20px;
-      border: 1px solid rgba(255, 255, 255, 0.2);
-    }
-    .gauge-container {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 15px;
-    }
-    .gauge {
-      width: 200px;
-      height: 200px;
-      border-radius: 50%;
-      background: conic-gradient(
-        from 180deg,
-        #ff4444 0deg 90deg,
-        #ffaa00 90deg 180deg,
-        #44ff44 180deg 270deg,
-        #ffaa00 270deg 360deg,
-        #ff4444 360deg
+      text-transform: uppercase;
+      background-image: repeating-linear-gradient(
+        0deg, transparent, transparent 2px,
+        rgba(0,255,65,0.025) 2px, rgba(0,255,65,0.025) 4px
       );
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 1.8em;
-      font-weight: bold;
-      position: relative;
-      box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
     }
-    .gauge::after {
-      content: '';
-      position: absolute;
-      width: 10px;
-      height: 10px;
-      background: #fff;
-      border-radius: 50%;
-      z-index: 10;
+    .scanline {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      pointer-events: none; z-index: 9999;
+      background: repeating-linear-gradient(
+        0deg, rgba(0,0,0,0.12) 0px, rgba(0,0,0,0.12) 1px,
+        transparent 1px, transparent 2px
+      );
     }
-    .zone-indicator {
-      font-size: 1.3em;
-      font-weight: bold;
-      text-align: center;
+    .container { max-width: 800px; margin: 0 auto; }
+    .header {
+      border: 1px solid var(--green); padding: 10px 16px;
+      margin-bottom: 12px; position: relative;
+      display: flex; justify-content: space-between; align-items: center;
     }
-    .status-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-      font-size: 0.95em;
+    .header::before {
+      content: '///'; position: absolute; top: -9px; left: 10px;
+      background: var(--bg); padding: 0 6px;
+      font-size: 0.65em; color: var(--green);
     }
-    .status-row {
-      display: flex;
-      justify-content: space-between;
-      padding: 8px;
-      background: rgba(255, 255, 255, 0.05);
-      border-radius: 5px;
+    .header-title { font-size: 1.3em; font-weight: bold; letter-spacing: 4px; }
+    .header-sub { font-size: 0.65em; color: #006a20; letter-spacing: 2px; margin-top: 2px; }
+    .status-led {
+      width: 9px; height: 9px; border-radius: 50%;
+      background: var(--green); box-shadow: 0 0 7px var(--green);
+      display: inline-block; animation: blink 2s step-end infinite;
     }
-    .controls {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 15px;
-      margin-bottom: 20px;
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+    .grid-2 {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 10px; margin-bottom: 10px;
     }
-    .control-group {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
+    .panel {
+      border: 1px solid var(--green); padding: 14px;
+      position: relative; background: rgba(0,18,0,0.6);
     }
-    label {
-      font-size: 0.9em;
-      opacity: 0.8;
-      font-weight: 600;
+    .panel-label {
+      position: absolute; top: -9px; left: 10px;
+      background: var(--bg); padding: 0 6px;
+      font-size: 0.6em; letter-spacing: 3px; color: var(--green);
     }
-    input[type="range"], input[type="number"] {
-      padding: 8px;
-      border-radius: 5px;
-      border: none;
-      background: rgba(255, 255, 255, 0.15);
-      color: #fff;
-      font-size: 0.9em;
+    .roll-primary {
+      font-size: 3.8em; font-weight: bold; text-align: center;
+      letter-spacing: 2px; line-height: 1; margin: 8px 0;
+      text-shadow: 0 0 18px var(--green);
+      transition: color 0.2s, text-shadow 0.2s;
     }
+    .roll-primary.cant { color: var(--red); text-shadow: 0 0 18px var(--red); }
+    .roll-primary.near { color: var(--amber); text-shadow: 0 0 18px var(--amber); }
+    .roll-bar-track {
+      height: 22px; background: #001200;
+      border: 1px solid var(--green); position: relative; overflow: visible;
+      margin: 14px 0 4px;
+    }
+    .roll-bar-fill {
+      position: absolute; top: 0; bottom: 0;
+      background: var(--green); opacity: 0.5;
+      transition: left 0.15s, width 0.15s, background 0.15s;
+    }
+    .roll-bar-center {
+      position: absolute; top: 0; bottom: 0; left: 50%;
+      width: 1px; background: var(--green); opacity: 0.35;
+    }
+    .roll-bar-needle {
+      position: absolute; top: -5px; bottom: -5px; width: 3px;
+      background: var(--green); box-shadow: 0 0 8px var(--green);
+      transform: translateX(-50%);
+      transition: left 0.15s, background 0.15s, box-shadow 0.15s;
+    }
+    .roll-bar-needle.cant { background: var(--red); box-shadow: 0 0 8px var(--red); }
+    .roll-bar-needle.near { background: var(--amber); box-shadow: 0 0 8px var(--amber); }
+    .roll-bar-labels {
+      display: flex; justify-content: space-between;
+      font-size: 0.55em; color: #005010; margin-top: 3px;
+    }
+    .zone-box {
+      text-align: center; padding: 6px;
+      border: 1px solid var(--green); margin-top: 8px;
+      font-size: 0.8em; letter-spacing: 5px;
+      transition: border-color 0.2s, color 0.2s;
+    }
+    .zone-box.level { border-color: var(--green); color: var(--green); }
+    .zone-box.near  { border-color: var(--amber); color: var(--amber); }
+    .zone-box.cant  { border-color: var(--red); color: var(--red); animation: blink 0.4s step-end infinite; }
+    .data-row {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 5px 0; border-bottom: 1px solid rgba(0,255,65,0.08);
+      font-size: 0.78em;
+    }
+    .data-row:last-child { border-bottom: none; }
+    .data-label { color: #006a20; letter-spacing: 1px; }
+    .data-value { color: var(--green); font-weight: bold; }
+    .batt-bar {
+      display: inline-block; width: 52px; height: 9px;
+      border: 1px solid var(--green); vertical-align: middle; position: relative; margin-left: 5px;
+    }
+    .batt-bar-fill {
+      position: absolute; top: 1px; left: 1px; bottom: 1px;
+      background: var(--green); transition: width 0.5s, background 0.5s;
+    }
+    .ctrl-row {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 7px 0; border-bottom: 1px solid rgba(0,255,65,0.08); gap: 10px;
+    }
+    .ctrl-row:last-child { border-bottom: none; }
+    .ctrl-label { font-size: 0.72em; letter-spacing: 2px; color: #006a20; width: 140px; flex-shrink: 0; }
+    .ctrl-val { font-size: 0.82em; color: var(--green); width: 46px; text-align: right; flex-shrink: 0; }
     input[type="range"] {
-      cursor: pointer;
-      height: 6px;
-      -webkit-appearance: none;
-      width: 100%;
+      -webkit-appearance: none; flex: 1; height: 3px;
+      background: #002200; border: none; outline: none; cursor: pointer;
     }
     input[type="range"]::-webkit-slider-thumb {
-      -webkit-appearance: none;
-      appearance: none;
-      width: 16px;
-      height: 16px;
-      border-radius: 50%;
-      background: #4CAF50;
-      cursor: pointer;
-      box-shadow: 0 0 10px rgba(76, 175, 80, 0.5);
+      -webkit-appearance: none; width: 13px; height: 13px;
+      background: var(--green); box-shadow: 0 0 5px var(--green); cursor: pointer;
     }
     input[type="range"]::-moz-range-thumb {
-      width: 16px;
-      height: 16px;
-      border-radius: 50%;
-      background: #4CAF50;
-      cursor: pointer;
-      border: none;
-      box-shadow: 0 0 10px rgba(76, 175, 80, 0.5);
+      width: 13px; height: 13px; background: var(--green); border: none; cursor: pointer;
     }
+    .btn-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
     button {
-      padding: 12px 20px;
-      border: none;
-      border-radius: 8px;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: #fff;
-      font-weight: bold;
-      cursor: pointer;
-      font-size: 1em;
-      transition: transform 0.2s, box-shadow 0.2s;
-      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+      padding: 9px 14px; background: transparent;
+      border: 1px solid var(--green); color: var(--green);
+      font-family: 'Courier New', monospace; font-size: 0.75em;
+      letter-spacing: 3px; text-transform: uppercase; cursor: pointer;
+      transition: background 0.1s, box-shadow 0.1s;
     }
     button:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+      background: rgba(0,255,65,0.08);
+      box-shadow: 0 0 10px rgba(0,255,65,0.25), inset 0 0 10px rgba(0,255,65,0.08);
     }
-    button:active {
-      transform: translateY(0);
+    button:active { background: rgba(0,255,65,0.2); }
+    button.btn-alert { border-color: var(--amber); color: var(--amber); }
+    button.btn-alert:hover {
+      background: rgba(255,176,0,0.08);
+      box-shadow: 0 0 10px rgba(255,176,0,0.25);
     }
-    button:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-    }
-    .full-width {
-      grid-column: 1 / -1;
-    }
-    .battery-indicator {
-      display: inline-block;
-      width: 40px;
-      height: 20px;
-      border: 2px solid #fff;
-      border-radius: 3px;
-      background: linear-gradient(90deg, #4CAF50 0%, #4CAF50 var(--battery-pct), #333 var(--battery-pct), #333 100%);
-      position: relative;
-    }
-    .battery-indicator::after {
-      content: '';
-      position: absolute;
-      right: -6px;
-      top: 50%;
-      transform: translateY(-50%);
-      width: 4px;
-      height: 8px;
-      background: #fff;
-      border-radius: 1px;
-    }
-    .info-section {
-      margin-top: 20px;
-      font-size: 0.85em;
-      opacity: 0.8;
-      text-align: center;
+    button:disabled { opacity: 0.3; cursor: not-allowed; box-shadow: none; }
+    .footer {
+      text-align: center; font-size: 0.58em; color: #004a10;
+      letter-spacing: 3px; margin-top: 12px; padding: 8px;
+      border-top: 1px solid var(--border);
     }
   </style>
 </head>
 <body>
-  <div class="container">
-    <h1>🎯 Scope Level Controller</h1>
-    
-    <div class="dashboard">
-      <div class="card">
-        <div class="gauge-container">
-          <div class="gauge" id="gauge">
-            <span id="rollValue">0.0°</span>
-          </div>
-          <div class="zone-indicator">
-            Zone: <span id="zoneDisplay">LEVEL</span>
-          </div>
-        </div>
-      </div>
-      
-      <div class="card">
-        <div class="status-grid">
-          <div class="status-row">
-            <span>Roll (raw):</span>
-            <span id="rollRaw">0.0°</span>
-          </div>
-          <div class="status-row">
-            <span>Battery:</span>
-            <span id="batteryVoltage">0.0V</span>
-          </div>
-          <div class="status-row">
-            <span>Boot Count:</span>
-            <span id="bootCount">0</span>
-          </div>
-          <div class="status-row">
-            <span>Calibrated:</span>
-            <span id="calibStatus">No</span>
-          </div>
-          <div class="status-row">
-            <span>Cal Offset:</span>
-            <span id="calOffset">0.0°</span>
-          </div>
-          <div class="status-row">
-            <span>Status:</span>
-            <span id="status">Connecting...</span>
-          </div>
-        </div>
-      </div>
+<div class="scanline"></div>
+<div class="container">
+  <div class="header">
+    <div>
+      <div class="header-title">NIRLABS // ANTI-CANT SYS</div>
+      <div class="header-sub">TACTICAL LEVEL CONTROL // v2.0</div>
     </div>
-
-    <div class="card">
-      <h2 style="margin-bottom: 15px; font-size: 1.2em;">⚙️ Configuration</h2>
-      <div class="controls">
-        <div class="control-group">
-          <label>Threshold: <span id="thresholdVal">0.5</span>°</label>
-          <input type="range" id="threshold" min="0.1" max="1.0" step="0.1" value="0.5">
-        </div>
-        <div class="control-group">
-          <label>Near Zone: <span id="nearzoneVal">1.5</span>°</label>
-          <input type="range" id="nearzone" min="0.5" max="3.0" step="0.1" value="1.5">
-        </div>
-        <div class="control-group">
-          <label>Max Cant: <span id="maxcantVal">5.0</span>°</label>
-          <input type="range" id="maxcant" min="2.0" max="10.0" step="0.5" value="5.0">
-        </div>
-        <div class="control-group">
-          <label>Hysteresis: <span id="hysteresisVal">0.15</span>°</label>
-          <input type="range" id="hysteresis" min="0.05" max="0.5" step="0.05" value="0.15">
-        </div>
-        <div class="control-group">
-          <label>EMA Alpha: <span id="emaVal">0.4</span></label>
-          <input type="range" id="ema" min="0.1" max="0.9" step="0.1" value="0.4">
-        </div>
-        <div class="control-group">
-          <button id="saveButton" onclick="saveConfig()">💾 Save Settings</button>
-        </div>
-        <div class="control-group full-width">
-          <button id="calibrateButton" onclick="triggerCalibrate()" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
-            📊 Calibrate Now
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <div class="info-section">
-      <p>NIRINIUM|LABS Anti-Cant Level Control Panel</p>
-      <p>Auto-updates every 500ms | WiFi: NIRINIUM_LEVEL</p>
+    <div style="text-align:right;font-size:0.68em;letter-spacing:2px;">
+      <span class="status-led"></span>&nbsp;ONLINE<br>
+      <span id="clockDisplay" style="color:#006a20">--:--:--</span>
     </div>
   </div>
 
-  <script>
-    let lastUpdate = 0;
-    let updateInterval = 500; // ms
+  <div class="grid-2">
+    <div class="panel">
+      <div class="panel-label">[ ROLL ANGLE ]</div>
+      <div class="roll-primary" id="rollValue">+0.0&deg;</div>
+      <div class="roll-bar-track">
+        <div class="roll-bar-fill" id="rollFill"></div>
+        <div class="roll-bar-center"></div>
+        <div class="roll-bar-needle" id="rollNeedle"></div>
+      </div>
+      <div class="roll-bar-labels">
+        <span>-5&deg;</span><span>-2.5&deg;</span><span>0&deg;</span><span>+2.5&deg;</span><span>+5&deg;</span>
+      </div>
+      <div class="zone-box level" id="zoneBox">--- LEVEL ---</div>
+    </div>
 
-    // Load stored values on page load
-    window.addEventListener('load', () => {
-      loadStoredValues();
-      updateDashboard();
-      setInterval(updateDashboard, updateInterval);
+    <div class="panel">
+      <div class="panel-label">[ SYSTEM STATUS ]</div>
+      <div class="data-row">
+        <span class="data-label">RAW ROLL</span>
+        <span class="data-value" id="rollRaw">+0.0&deg;</span>
+      </div>
+      <div class="data-row">
+        <span class="data-label">CAL OFFSET</span>
+        <span class="data-value" id="calOffset">+0.00&deg;</span>
+      </div>
+      <div class="data-row">
+        <span class="data-label">CALIBRATED</span>
+        <span class="data-value" id="calibStatus">NO</span>
+      </div>
+      <div class="data-row">
+        <span class="data-label">BOOT COUNT</span>
+        <span class="data-value" id="bootCount">0</span>
+      </div>
+      <div class="data-row">
+        <span class="data-label">BATTERY</span>
+        <span class="data-value">
+          <span id="batteryVoltage">0.00V</span>
+          <span class="batt-bar"><span class="batt-bar-fill" id="battFill" style="width:80%"></span></span>
+        </span>
+      </div>
+      <div class="data-row">
+        <span class="data-label">LINK STATUS</span>
+        <span class="data-value" id="status">ACQUIRING...</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel" style="margin-bottom:10px;">
+    <div class="panel-label">[ PARAMETERS ]</div>
+    <div class="ctrl-row">
+      <span class="ctrl-label">THRESHOLD</span>
+      <input type="range" id="threshold" min="0.1" max="1.0" step="0.1" value="0.5">
+      <span class="ctrl-val" id="thresholdVal">0.5&deg;</span>
+    </div>
+    <div class="ctrl-row">
+      <span class="ctrl-label">NEAR ZONE</span>
+      <input type="range" id="nearzone" min="0.5" max="3.0" step="0.1" value="1.5">
+      <span class="ctrl-val" id="nearzoneVal">1.5&deg;</span>
+    </div>
+    <div class="ctrl-row">
+      <span class="ctrl-label">MAX CANT</span>
+      <input type="range" id="maxcant" min="2.0" max="10.0" step="0.5" value="5.0">
+      <span class="ctrl-val" id="maxcantVal">5.0&deg;</span>
+    </div>
+    <div class="ctrl-row">
+      <span class="ctrl-label">HYSTERESIS</span>
+      <input type="range" id="hysteresis" min="0.05" max="0.5" step="0.05" value="0.15">
+      <span class="ctrl-val" id="hysteresisVal">0.15&deg;</span>
+    </div>
+    <div class="ctrl-row">
+      <span class="ctrl-label">EMA ALPHA</span>
+      <input type="range" id="ema" min="0.1" max="0.9" step="0.1" value="0.4">
+      <span class="ctrl-val" id="emaVal">0.4</span>
+    </div>
+    <div class="btn-row">
+      <button id="saveButton" onclick="saveConfig()">[ COMMIT PARAMS ]</button>
+      <button id="calibrateButton" class="btn-alert" onclick="triggerCalibrate()">[ CALIBRATE ]</button>
+    </div>
+  </div>
+
+  <div class="footer">
+    NIRINIUM|LABS &bull; ANTI-CANT LEVEL SYS &bull; RF: NIRINIUM_LEVEL &bull; IP: 192.168.4.1
+  </div>
+</div>
+
+<script>
+  setInterval(() => {
+    const n = new Date();
+    document.getElementById('clockDisplay').textContent =
+      String(n.getHours()).padStart(2,'0') + ':' +
+      String(n.getMinutes()).padStart(2,'0') + ':' +
+      String(n.getSeconds()).padStart(2,'0');
+  }, 1000);
+
+  window.addEventListener('load', () => {
+    loadStoredValues();
+    updateDashboard();
+    setInterval(updateDashboard, 500);
+  });
+
+  function loadStoredValues() {
+    const defs = {threshold:'0.5',nearzone:'1.5',maxcant:'5.0',hysteresis:'0.15',ema:'0.4'};
+    Object.keys(defs).forEach(k => {
+      document.getElementById(k).value = localStorage.getItem(k) || defs[k];
     });
+    updateLabels();
+  }
 
-    function loadStoredValues() {
-      const threshold = localStorage.getItem('threshold') || '0.5';
-      const nearzone = localStorage.getItem('nearzone') || '1.5';
-      const maxcant = localStorage.getItem('maxcant') || '5.0';
-      const hysteresis = localStorage.getItem('hysteresis') || '0.15';
-      const ema = localStorage.getItem('ema') || '0.4';
-      
-      document.getElementById('threshold').value = threshold;
-      document.getElementById('nearzone').value = nearzone;
-      document.getElementById('maxcant').value = maxcant;
-      document.getElementById('hysteresis').value = hysteresis;
-      document.getElementById('ema').value = ema;
-      
-      updateLabels();
-    }
+  function updateLabels() {
+    document.getElementById('thresholdVal').textContent  = document.getElementById('threshold').value  + '\xb0';
+    document.getElementById('nearzoneVal').textContent   = document.getElementById('nearzone').value   + '\xb0';
+    document.getElementById('maxcantVal').textContent    = document.getElementById('maxcant').value    + '\xb0';
+    document.getElementById('hysteresisVal').textContent = document.getElementById('hysteresis').value + '\xb0';
+    document.getElementById('emaVal').textContent        = document.getElementById('ema').value;
+  }
+  ['threshold','nearzone','maxcant','hysteresis','ema'].forEach(id => {
+    document.getElementById(id).oninput = updateLabels;
+  });
 
-    function updateLabels() {
-      document.getElementById('thresholdVal').textContent = document.getElementById('threshold').value;
-      document.getElementById('nearzoneVal').textContent = document.getElementById('nearzone').value;
-      document.getElementById('maxcantVal').textContent = document.getElementById('maxcant').value;
-      document.getElementById('hysteresisVal').textContent = document.getElementById('hysteresis').value;
-      document.getElementById('emaVal').textContent = document.getElementById('ema').value;
-    }
+  const ZONE_NAMES   = ['--- LEVEL ---', '-- NEAR CANT --', '-- CANT DETECTED --'];
+  const ZONE_CLASSES = ['level', 'near', 'cant'];
+  const ZONE_COLORS  = ['#00ff41', '#ffb000', '#ff2828'];
 
-    document.getElementById('threshold').oninput = updateLabels;
-    document.getElementById('nearzone').oninput = updateLabels;
-    document.getElementById('maxcant').oninput = updateLabels;
-    document.getElementById('hysteresis').oninput = updateLabels;
-    document.getElementById('ema').oninput = updateLabels;
+  async function updateDashboard() {
+    try {
+      const data = await fetch('/api/status').then(r => r.json());
+      const roll = data.roll;
+      const sign = roll >= 0 ? '+' : '';
+      const zone = data.zone || 0;
 
-    async function updateDashboard() {
-      try {
-        const response = await fetch('/api/status');
-        const data = await response.json();
-        
-        // Update gauge and values
-        document.getElementById('rollValue').textContent = data.roll.toFixed(1) + '°';
-        document.getElementById('rollRaw').textContent = data.rawRoll.toFixed(1) + '°';
-        document.getElementById('zoneDisplay').textContent = data.zoneName;
-        document.getElementById('bootCount').textContent = data.bootCount;
-        document.getElementById('calibStatus').textContent = data.calibrated ? 'Yes' : 'No';
-        document.getElementById('calOffset').textContent = data.calOffset.toFixed(2) + '°';
-        document.getElementById('batteryVoltage').textContent = data.battery.toFixed(2) + 'V';
-        document.getElementById('status').textContent = data.calibrating ? '⏳ Calibrating...' : '✓ Ready';
-        
-        // Update gauge needle rotation
-        const rollAngle = Math.max(-30, Math.min(30, data.roll * 6));
-        document.getElementById('gauge').style.setProperty('--needle-angle', rollAngle + 'deg');
-        
-        // Update battery color
-        const batteryPct = Math.max(0, Math.min(100, (data.battery / 4.2) * 100));
-        const batteryColor = batteryPct > 50 ? '#4CAF50' : batteryPct > 20 ? '#ffaa00' : '#ff4444';
-        const gauge = document.getElementById('gauge');
-        gauge.style.color = data.zone === 0 ? '#44ff44' : data.zone === 1 ? '#ffaa00' : '#ff4444';
-      } catch (e) {
-        document.getElementById('status').textContent = '⚠ No connection';
-        console.error('Update failed:', e);
+      const rollEl   = document.getElementById('rollValue');
+      const zoneBox  = document.getElementById('zoneBox');
+      const needle   = document.getElementById('rollNeedle');
+      const fill     = document.getElementById('rollFill');
+
+      rollEl.textContent = sign + roll.toFixed(1) + '\xb0';
+      rollEl.className = 'roll-primary' + (zone === 2 ? ' cant' : zone === 1 ? ' near' : '');
+
+      zoneBox.className   = 'zone-box ' + ZONE_CLASSES[zone];
+      zoneBox.textContent = ZONE_NAMES[zone];
+      needle.className    = 'roll-bar-needle' + (zone > 0 ? ' ' + ZONE_CLASSES[zone] : '');
+      fill.style.background = ZONE_COLORS[zone];
+
+      const maxRange = 5.0;
+      const pct    = Math.max(0, Math.min(100, ((roll + maxRange) / (maxRange * 2)) * 100));
+      needle.style.left = pct + '%';
+      if (pct >= 50) {
+        fill.style.left  = '50%';
+        fill.style.width = (pct - 50) + '%';
+      } else {
+        fill.style.left  = pct + '%';
+        fill.style.width = (50 - pct) + '%';
       }
-    }
 
-    async function saveConfig() {
-      const config = {
-        threshold: parseFloat(document.getElementById('threshold').value),
-        nearzone: parseFloat(document.getElementById('nearzone').value),
-        maxcant: parseFloat(document.getElementById('maxcant').value),
-        hysteresis: parseFloat(document.getElementById('hysteresis').value),
-        ema: parseFloat(document.getElementById('ema').value)
-      };
-      
-      localStorage.setItem('threshold', config.threshold);
-      localStorage.setItem('nearzone', config.nearzone);
-      localStorage.setItem('maxcant', config.maxcant);
-      localStorage.setItem('hysteresis', config.hysteresis);
-      localStorage.setItem('ema', config.ema);
-      
-      try {
-        const response = await fetch('/api/config', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(config)
-        });
-        const result = await response.json();
-        alert(result.message || 'Settings saved!');
-      } catch (e) {
-        alert('Failed to save settings');
-      }
-    }
+      const s = v => (v >= 0 ? '+' : '') + v.toFixed(1) + '\xb0';
+      document.getElementById('rollRaw').textContent    = s(data.rawRoll);
+      document.getElementById('calOffset').textContent  = (data.calOffset >= 0 ? '+' : '') + data.calOffset.toFixed(2) + '\xb0';
+      document.getElementById('calibStatus').textContent = data.calibrated ? 'YES' : 'NO';
+      document.getElementById('bootCount').textContent  = data.bootCount;
+      document.getElementById('batteryVoltage').textContent = data.battery.toFixed(2) + 'V';
+      document.getElementById('status').textContent     = data.calibrating ? 'CALIBRATING...' : 'NOMINAL';
 
-    async function triggerCalibrate() {
-      const btn = document.getElementById('calibrateButton');
-      btn.disabled = true;
-      try {
-        const response = await fetch('/api/calibrate', { method: 'POST' });
-        const result = await response.json();
-        alert(result.message || 'Calibration started');
-      } catch (e) {
-        alert('Failed to start calibration');
-      }
-      setTimeout(() => { btn.disabled = false; }, 2000);
+      const battPct   = Math.max(0, Math.min(100, (data.battery / 4.2) * 100));
+      const battFill  = document.getElementById('battFill');
+      battFill.style.width      = battPct + '%';
+      battFill.style.background = battPct > 50 ? '#00ff41' : battPct > 20 ? '#ffb000' : '#ff2828';
+    } catch (e) {
+      document.getElementById('status').textContent = 'LINK LOST';
     }
-  </script>
+  }
+
+  async function saveConfig() {
+    const config = {
+      threshold: parseFloat(document.getElementById('threshold').value),
+      nearzone:  parseFloat(document.getElementById('nearzone').value),
+      maxcant:   parseFloat(document.getElementById('maxcant').value),
+      hysteresis:parseFloat(document.getElementById('hysteresis').value),
+      ema:       parseFloat(document.getElementById('ema').value)
+    };
+    Object.keys(config).forEach(k => localStorage.setItem(k, config[k]));
+    try {
+      await fetch('/api/config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(config)
+      });
+      const btn = document.getElementById('saveButton');
+      btn.textContent = '[ COMMITTED ]';
+      setTimeout(() => { btn.textContent = '[ COMMIT PARAMS ]'; }, 1500);
+    } catch (e) { alert('TRANSMIT FAILURE'); }
+  }
+
+  async function triggerCalibrate() {
+    const btn = document.getElementById('calibrateButton');
+    btn.disabled = true;
+    btn.textContent = '[ CALIBRATING... ]';
+    try { await fetch('/api/calibrate', { method: 'POST' }); } catch (e) {}
+    setTimeout(() => { btn.disabled = false; btn.textContent = '[ CALIBRATE ]'; }, 3000);
+  }
+</script>
 </body>
 </html>
 )HTML";
 
 void setupWiFi() {
   Serial.println("Setting up WiFi AP...");
+  WiFi.disconnect(true);
   WiFi.mode(WIFI_AP);
-  WiFi.softAP(SSID, PASSWORD);
-  
+  WiFi.setTxPower(WIFI_POWER_19_5dBm);
+  WiFi.setHostname("NIRLABS_SCOPE");
+
+  IPAddress local_IP(192, 168, 4, 1);
+  IPAddress gateway(192, 168, 4, 1);
+  IPAddress subnet(255, 255, 255, 0);
+
+  if (!WiFi.softAPConfig(local_IP, gateway, subnet)) {
+    Serial.println("Failed to configure AP IP.");
+  }
+
+  if (!WiFi.softAP(SSID, PASSWORD, 1, false, 4)) {
+    Serial.println("WiFi.softAP failed!");
+  } else {
+    Serial.println("WiFi.softAP started successfully");
+  }
+
+  delay(1000);
   IPAddress IP = WiFi.softAPIP();
   Serial.print("AP IP address: ");
   Serial.println(IP);
+  Serial.print("AP SSID: ");
+  Serial.println(SSID);
+  Serial.print("AP channel: ");
+  Serial.println(WiFi.channel());
+  Serial.print("AP stations: ");
+  Serial.println(WiFi.softAPgetStationNum());
 }
 
 void setupWebServer() {
