@@ -1,18 +1,18 @@
 #include <Arduino.h>
 #include <Wire.h>
 #include <WiFi.h>
+#include <esp_wifi.h>
 #include <ESPAsyncWebServer.h>
 #include <Adafruit_Sensor.h>
 #include <Adafruit_ADXL345_U.h>
 #include <ArduinoJson.h>
-#include <SPIFFS.h>
 #include <esp_sleep.h>
 #include <nvs_flash.h>
 #include <nvs.h>
 
 // ===== WiFi Config =====
 const char* SSID = "NIRINIUM_LEVEL";
-const char* PASSWORD = "leveling123";
+const char* PASSWORD = nullptr;
 const char* NVS_NAMESPACE = "scopelevel";
 
 // ===== Web Server =====
@@ -55,6 +55,9 @@ float MAX_CANT   = 5.0;
 float HYSTERESIS = 0.15;
 float EMA_ALPHA  = 0.4;
 
+// === LED BRIGHTNESS (0-255, configurable via web) ===
+uint8_t g_led_brightness = 200;
+
 // === STATE ===
 unsigned long cycleStart = 0;
 int currentCycle = 1500;
@@ -80,9 +83,17 @@ void allLedsOff() {
   ledPWM(PWM_CH_RR, 0);
 }
 
+// Calibration: set to (actual_V / displayed_V) if reading is still off
+#define BATT_CALIB_RATIO 1.0f
+
 float readBatteryVoltage() {
-  int raw = analogRead(BATT_PIN);
-  return (raw / 4095.0f) * 3.3f * 2.0f; // 100k/100k divider
+  // Use raw analogRead — at 11dB (set via adc1_config_channel_atten), full scale = 2500mV
+  // analogReadMilliVolts() is unreliable when attenuation is set via IDF directly
+  uint32_t sum = 0;
+  for (int i = 0; i < 8; i++) sum += analogRead(BATT_PIN);
+  float raw = sum / 8.0f;
+  float pinV = (raw / 4095.0f) * 2.5f;  // 11dB attenuation: 0-2.5V full scale
+  return pinV * 2.0f * BATT_CALIB_RATIO; // 100k/100k divider: D0 = BAT+/2
 }
 
 void calibrate() {
@@ -139,6 +150,7 @@ void saveThresholdsToNVS() {
   nvs_set_i32(handle, "maxcant_x100", (int32_t)(MAX_CANT * 100));
   nvs_set_i32(handle, "hysteresis_x100", (int32_t)(HYSTERESIS * 100));
   nvs_set_i32(handle, "ema_alpha_x1000", (int32_t)(EMA_ALPHA * 1000));
+  nvs_set_i32(handle, "led_brightness", (int32_t)g_led_brightness);
   nvs_commit(handle);
   nvs_close(handle);
 }
@@ -152,6 +164,7 @@ void loadThresholdsFromNVS() {
     if (nvs_get_i32(handle, "maxcant_x100", &val) == ESP_OK) MAX_CANT = val / 100.0f;
     if (nvs_get_i32(handle, "hysteresis_x100", &val) == ESP_OK) HYSTERESIS = val / 100.0f;
     if (nvs_get_i32(handle, "ema_alpha_x1000", &val) == ESP_OK) EMA_ALPHA = val / 1000.0f;
+    if (nvs_get_i32(handle, "led_brightness", &val) == ESP_OK) g_led_brightness = (uint8_t)constrain(val, 0, 255);
     nvs_close(handle);
   }
 }
@@ -417,6 +430,11 @@ const char INDEX_HTML[] PROGMEM = R"HTML(
       <input type="range" id="ema" min="0.1" max="0.9" step="0.1" value="0.4">
       <span class="ctrl-val" id="emaVal">0.4</span>
     </div>
+    <div class="ctrl-row">
+      <span class="ctrl-label">LED BRIGHTNESS</span>
+      <input type="range" id="ledBrightness" min="0" max="100" step="5" value="78">
+      <span class="ctrl-val" id="ledBrightnessVal">78%</span>
+    </div>
     <div class="btn-row">
       <button id="saveButton" onclick="saveConfig()">[ COMMIT PARAMS ]</button>
       <button id="calibrateButton" class="btn-alert" onclick="triggerCalibrate()">[ CALIBRATE ]</button>
@@ -443,8 +461,10 @@ const char INDEX_HTML[] PROGMEM = R"HTML(
     setInterval(updateDashboard, 500);
   });
 
+  let controlsSynced = false;
+
   function loadStoredValues() {
-    const defs = {threshold:'0.5',nearzone:'1.5',maxcant:'5.0',hysteresis:'0.15',ema:'0.4'};
+    const defs = {threshold:'0.5',nearzone:'1.5',maxcant:'5.0',hysteresis:'0.15',ema:'0.4',ledBrightness:'78'};
     Object.keys(defs).forEach(k => {
       document.getElementById(k).value = localStorage.getItem(k) || defs[k];
     });
@@ -457,8 +477,9 @@ const char INDEX_HTML[] PROGMEM = R"HTML(
     document.getElementById('maxcantVal').textContent    = document.getElementById('maxcant').value    + '\xb0';
     document.getElementById('hysteresisVal').textContent = document.getElementById('hysteresis').value + '\xb0';
     document.getElementById('emaVal').textContent        = document.getElementById('ema').value;
+    document.getElementById('ledBrightnessVal').textContent = document.getElementById('ledBrightness').value + '%';
   }
-  ['threshold','nearzone','maxcant','hysteresis','ema'].forEach(id => {
+  ['threshold','nearzone','maxcant','hysteresis','ema','ledBrightness'].forEach(id => {
     document.getElementById(id).oninput = updateLabels;
   });
 
@@ -505,6 +526,13 @@ const char INDEX_HTML[] PROGMEM = R"HTML(
       document.getElementById('batteryVoltage').textContent = data.battery.toFixed(2) + 'V';
       document.getElementById('status').textContent     = data.calibrating ? 'CALIBRATING...' : 'NOMINAL';
 
+      if (typeof data.ledBrightness !== 'undefined' && !controlsSynced) {
+        document.getElementById('ledBrightness').value = data.ledBrightness;
+        document.getElementById('ledBrightnessVal').textContent = data.ledBrightness + '%';
+        localStorage.setItem('ledBrightness', data.ledBrightness);
+      }
+      controlsSynced = true;
+
       const battPct   = Math.max(0, Math.min(100, (data.battery / 4.2) * 100));
       const battFill  = document.getElementById('battFill');
       battFill.style.width      = battPct + '%';
@@ -520,7 +548,8 @@ const char INDEX_HTML[] PROGMEM = R"HTML(
       nearzone:  parseFloat(document.getElementById('nearzone').value),
       maxcant:   parseFloat(document.getElementById('maxcant').value),
       hysteresis:parseFloat(document.getElementById('hysteresis').value),
-      ema:       parseFloat(document.getElementById('ema').value)
+      ema:       parseFloat(document.getElementById('ema').value),
+      ledBrightness: parseInt(document.getElementById('ledBrightness').value)
     };
     Object.keys(config).forEach(k => localStorage.setItem(k, config[k]));
     try {
@@ -562,9 +591,15 @@ void setupWiFi() {
     Serial.println("Failed to configure AP IP.");
   }
 
-  if (!WiFi.softAP(SSID, PASSWORD, 1, false, 4)) {
+  if (!WiFi.softAP(SSID, nullptr, 6, false, 4)) {
     Serial.println("WiFi.softAP failed!");
   } else {
+    // Force open auth mode so Windows can connect without password prompt
+    wifi_config_t conf;
+    esp_wifi_get_config(WIFI_IF_AP, &conf);
+    conf.ap.authmode = WIFI_AUTH_OPEN;
+    conf.ap.password[0] = '\0';
+    esp_wifi_set_config(WIFI_IF_AP, &conf);
     Serial.println("WiFi.softAP started successfully");
   }
 
@@ -598,6 +633,7 @@ void setupWebServer() {
     doc["calibrated"] = rtcCalibrated;
     doc["calOffset"] = calibrationOffset;
     doc["calibrating"] = calibrating;
+    doc["ledBrightness"] = (int)map(g_led_brightness, 0, 255, 0, 100);
     
     String response;
     serializeJson(doc, response);
@@ -615,6 +651,10 @@ void setupWebServer() {
       if (doc.containsKey("maxcant")) MAX_CANT = doc["maxcant"];
       if (doc.containsKey("hysteresis")) HYSTERESIS = doc["hysteresis"];
       if (doc.containsKey("ema")) EMA_ALPHA = doc["ema"];
+      if (doc.containsKey("ledBrightness")) {
+        int pct = constrain((int)doc["ledBrightness"], 0, 100);
+        g_led_brightness = (uint8_t)map(pct, 0, 100, 0, 255);
+      }
       
       saveThresholdsToNVS();
       
@@ -645,14 +685,13 @@ void setupWebServer() {
 
 void setup() {
   Serial.begin(115200);
-  delay(1000);
+  delay(500);
 
   ++bootCount;
   Serial.println("\n\nNIRINIUM|LABS - Scope Level WebUI");
   Serial.printf("Boot #%d\n", bootCount);
 
-  // Initialize SPIFFS and NVS
-  SPIFFS.begin();
+  // Initialize NVS
   nvs_flash_init();
   loadThresholdsFromNVS();
 
@@ -669,25 +708,32 @@ void setup() {
   ledcAttachPin(YELLOW_RIGHT, PWM_CH_YR);
   ledcAttachPin(RED_RIGHT, PWM_CH_RR);
 
+  // WiFi & Web Server — start early so AP is always reachable
+  setupWiFi();
+  setupWebServer();
+
   // Sensor setup
   analogReadResolution(12);
+  // Arduino ESP32 3.x defaults to 11dB attenuation (0-2.5V) — no explicit config needed
   pinMode(BATT_PIN, INPUT);
   Wire.begin(I2C_SDA, I2C_SCL);
 
   if (!accel.begin()) {
-    Serial.println("ADXL345 not found!");
-    while (1) {
-      allLedsOff();
+    Serial.println("ADXL345 not found! Running in WiFi-only mode.");
+    // Blink yellow LEDs but do NOT block — WiFi is already up
+    for (int i = 0; i < 6; i++) {
       ledPWM(PWM_CH_YL, 220);
       ledPWM(PWM_CH_YR, 220);
-      delay(500);
+      delay(200);
       allLedsOff();
-      delay(500);
+      delay(200);
     }
+    lastBattCheck = millis();
+    return; // skip calibration — loop() will handle gracefully
   }
 
   accel.setRange(ADXL345_RANGE_2_G);
-  
+
   // Calibration on boot if not previously calibrated
   if (!rtcCalibrated) {
     calibrate();
@@ -695,10 +741,6 @@ void setup() {
     calibrationOffset = rtcCalibrationOffset;
     Serial.printf("Restored cal offset: %.2f\n", calibrationOffset);
   }
-
-  // WiFi & Web Server
-  setupWiFi();
-  setupWebServer();
 
   Serial.println("Scope Level WebUI ready!");
   lastBattCheck = millis();
@@ -738,7 +780,7 @@ void loop() {
     // LED feedback
     unsigned long elapsed = now - cycleStart;
     if (currentZone == 0) {
-      uint8_t greenBright = batteryLow ? 60 : 200;
+      uint8_t greenBright = batteryLow ? min((uint8_t)60, g_led_brightness) : g_led_brightness;
       ledPWM(PWM_CH_GREEN, greenBright);
       allLedsOff();
       ledPWM(PWM_CH_GREEN, greenBright);
@@ -749,7 +791,7 @@ void loop() {
       currentCycle = 1500 - (int)(t * t * 1000 * 0.3f);
       if (elapsed >= (unsigned long)currentCycle) cycleStart = now;
       
-      uint8_t yellowBright = elapsed < 80UL ? (uint8_t)(120 + 80 * t) : 0;
+      uint8_t yellowBright = elapsed < 80UL ? (uint8_t)((120 + 80 * t) * g_led_brightness / 255.0f) : 0;
       ledPWM(PWM_CH_YL, (currentRoll < 0) ? yellowBright : 0);
       ledPWM(PWM_CH_YR, (currentRoll > 0) ? yellowBright : 0);
       ledPWM(PWM_CH_RL, 0);
@@ -763,8 +805,8 @@ void loop() {
       bool pulse2 = elapsed >= 180UL && elapsed < 260UL;
       bool redOn = pulse1 || pulse2;
       
-      uint8_t redBright = redOn ? (uint8_t)(150 + 105 * t) : 0;
-      uint8_t yellowBright = (uint8_t)(25 + 80 * t);
+      uint8_t redBright = redOn ? (uint8_t)((150 + 105 * t) * g_led_brightness / 255.0f) : 0;
+      uint8_t yellowBright = (uint8_t)((25 + 80 * t) * g_led_brightness / 255.0f);
       ledPWM(PWM_CH_YL, (currentRoll < 0) ? yellowBright : 0);
       ledPWM(PWM_CH_RL, (currentRoll < 0) ? redBright : 0);
       ledPWM(PWM_CH_YR, (currentRoll > 0) ? yellowBright : 0);
